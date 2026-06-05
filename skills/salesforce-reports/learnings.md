@@ -38,3 +38,18 @@ Consolidate weekly OR when this file exceeds ~100 bullets.
 - `sf org list` shows org62 connected as `eprouveze@salesforce.com`; default API
   is 67.0 but Analytics REST is verified stable on 62.0 (the skill pins 62.0).
   (captured)
+
+## 2026-06-06 — create now takes columns/filters/groups (v0.2.0)
+- `create` previously sent empty `detailColumns`/`reportFilters` by design (stub
+  only). The Analytics REST create endpoint accepts a full `reportMetadata`, so
+  added repeatable `--column`, `--filter '<col> <op> <value>'`, `--group`, plus
+  `--boolean-filter` and `--gc`/`--gc-column` (parity with clone). Verified live on
+  org62: created with 2 columns + a `lessThan 50` filter, both persisted on
+  `get --describe`, then deleted (204). (applied → How creation actually works)
+- `--filter` value is parsed as `split(None, 2)` so the value (3rd field) keeps
+  spaces/commas — `--filter 'StageName equals Closed Won'` works. JSON is built in
+  Python (not heredoc interpolation) so quotes/commas in values can't break the body.
+  (captured)
+- Filter/column/group api names are report-type-specific. Discover them from an
+  existing report of the same type via `get <id> --describe` (detailColumns +
+  reportFilters). A wrong api name is rejected by the create POST. (captured)

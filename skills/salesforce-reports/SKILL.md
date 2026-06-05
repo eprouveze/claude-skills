@@ -9,7 +9,7 @@ description: >
   via sf CLI", "list/run/delete reports", "report API", or "Analytics REST reports".
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, AskUserQuestion
 user-invocable: true
-version: 0.1.0
+version: 0.2.0
 last-updated: 2026-06-06
 last-consolidated: 2026-06-06
 metadata:
@@ -38,7 +38,8 @@ S=~/.claude/skills/salesforce-reports/scripts/sfreport.sh
 "$S" get  <id> --describe     # a report's metadata (filters, columns, format)
 "$S" run  <id>                # run synchronously, return rows
 "$S" clone --from <id> --name "Copy of X"   # most reliable way to create a report
-"$S" create --type <apiName> --name "New"   # empty report of a report type
+"$S" create --type <apiName> --name "New" \
+     --column <api> --filter '<col> <op> <value>' --group <api>   # report with columns/filters
 "$S" delete <id> --yes        # delete (HTTP 204 on success)
 "$S" --help                   # full reference
 ```
@@ -96,9 +97,25 @@ Two create paths, in order of reliability:
   full `reportMetadata` (renamed). The skill fetches `/describe`, renames, optionally
   re-points the Global Company filter, and POSTs. This always yields a working report with
   columns and groupings already in place.
-- **Bare create.** `POST /analytics/reports` with a minimal `reportMetadata` naming a
-  `reportType`. Produces an *empty* report (no columns) — only useful as a stub you finish
-  in the UI. Use `types` to find a valid `reportType` api name.
+- **Create with metadata.** `POST /analytics/reports` with a `reportMetadata` naming a
+  `reportType`. Use `types` to find a valid `reportType` api name, and `get <existing> --describe`
+  to discover that type's valid column / filter / grouping api names. The skill accepts:
+  - `--column <api>` (repeatable) → `detailColumns`
+  - `--filter '<col> <operator> <value>'` (repeatable) → `reportFilters`; the value is the
+    remainder of the string, so spaces/commas are fine (`--filter 'StageName equals Closed Won'`).
+    Operators: `equals`, `notEqual`, `lessThan`, `greaterThan`, `contains`, `startsWith`, etc.
+  - `--group <api>` (repeatable) → `groupingsDown` (required for `SUMMARY`/`MATRIX`)
+  - `--boolean-filter '<expr>'` → `reportBooleanFilter` (e.g. `'1 AND (2 OR 3)'`)
+  - `--gc <value> --gc-column <api>` → adds the GAM Global Company equals-filter
+  With no `--column`, create still produces an empty stub. Clone remains the easiest path
+  when you want to start from an existing report's full layout.
+
+  ```bash
+  "$S" create --type Opportunity --name "My Q3 Pipeline" --format SUMMARY \
+        --column StageName --column Amount --column CloseDate \
+        --filter 'StageName equals Closed Won' --filter 'Amount greaterThan 50000' \
+        --group StageName
+  ```
 
 ## Known gotchas
 

@@ -177,29 +177,71 @@ except Exception: pass'
   /bin/rm -f "$desc" "$body"
 }
 
-cmd_create() {  # --type <reportTypeApiName> --name <name> [--format TABULAR|SUMMARY|MATRIX]
+cmd_create() {  # --type <api> --name <name> [--format ...] [--column ...] [--filter ...] [--group ...] [--boolean-filter ...] [--gc ... --gc-column ...]
   need_sf
-  local rtype="" name="" fmt="TABULAR"
+  local rtype="" name="" fmt="TABULAR" bool_filter="" gc_arg="" gc_col="$GC_COLUMN_DEFAULT"
+  local -a cols=() filters=() groups=()
   while [[ $# -gt 0 ]]; do case "$1" in
-    --type) rtype="$2"; shift 2;;
-    --name) name="$2"; shift 2;;
-    --format) fmt="$2"; shift 2;;
+    --type)           rtype="$2"; shift 2;;
+    --name)           name="$2"; shift 2;;
+    --format)         fmt="$2"; shift 2;;
+    --column)         cols+=("$2"); shift 2;;
+    --filter)         filters+=("$2"); shift 2;;        # "<col> <operator> <value...>"
+    --group)          groups+=("$2"); shift 2;;          # SUMMARY/MATRIX groupingsDown
+    --boolean-filter) bool_filter="$2"; shift 2;;        # e.g. "1 AND (2 OR 3)"
+    --gc)             gc_arg="$2"; shift 2;;
+    --gc-column)      gc_col="$2"; shift 2;;
     *) err "create: unknown arg $1"; exit 2;;
   esac; done
-  [[ -n "$rtype" && -n "$name" ]] || { err "usage: $PROG create --type <reportTypeApiName> --name <name> [--format TABULAR|SUMMARY|MATRIX]"; exit 2; }
+  [[ -n "$rtype" && -n "$name" ]] || { err "usage: $PROG create --type <reportTypeApiName> --name <name> [--format TABULAR|SUMMARY|MATRIX] [--column <api>]... [--filter '<col> <op> <value>']... [--group <api>]... [--boolean-filter '<expr>'] [--gc <value> --gc-column <api>]"; exit 2; }
+
+  # A GAM Global Company value becomes an implicit equals-filter on its column.
+  local gc; gc="$(resolve_global_company "$gc_arg")"
+  if [[ -n "$gc" ]]; then
+    if [[ -n "$gc_col" ]]; then filters+=("${gc_col} equals ${gc}")
+    else err "create: --gc given without --gc-column (set GC_COLUMN_DEFAULT via setup or pass --gc-column)"; exit 2; fi
+  fi
 
   local body; body="$(mktemp -t sfreport_new.XXXXXX.json)"
-  cat > "$body" <<JSON
-{ "reportMetadata": {
-    "name": "${name}",
-    "reportType": { "type": "${rtype}" },
-    "reportFormat": "${fmt}",
-    "detailColumns": [],
-    "reportFilters": []
-} }
-JSON
-  info "Creating report '${name}' (type ${rtype}, ${fmt}) ..."
-  info "Note: a bare report has no columns — clone an existing one for a useful start."
+  NAME="$name" RTYPE="$rtype" FMT="$fmt" BOOLF="$bool_filter" \
+  python3 - "$body" "cols" "${cols[@]+"${cols[@]}"}" "::filters::" "${filters[@]+"${filters[@]}"}" "::groups::" "${groups[@]+"${groups[@]}"}" <<'PY'
+import json, os, sys
+out_path = sys.argv[1]
+rest = sys.argv[2:]
+# Partition the flat argv into the three lists by their sentinel markers.
+cols, filters, groups, bucket = [], [], [], None
+for tok in rest:
+    if   tok == "cols":        bucket = cols;    continue
+    elif tok == "::filters::": bucket = filters; continue
+    elif tok == "::groups::":  bucket = groups;  continue
+    if bucket is not None: bucket.append(tok)
+
+def parse_filter(s):
+    # "<column> <operator> <value...>" — value is the remainder (may contain spaces/commas).
+    parts = s.split(None, 2)
+    if len(parts) < 3:
+        sys.stderr.write(f"WARN: skipping malformed --filter (need 'col op value'): {s!r}\n")
+        return None
+    col, op, val = parts
+    return {"column": col, "operator": op, "value": val}
+
+md = {
+    "name": os.environ["NAME"],
+    "reportType": {"type": os.environ["RTYPE"]},
+    "reportFormat": os.environ["FMT"],
+    "detailColumns": cols,
+    "reportFilters": [f for f in (parse_filter(x) for x in filters) if f],
+}
+if groups:
+    # groupingsDown is required for SUMMARY/MATRIX; sortOrder defaults to Asc.
+    md["groupingsDown"] = [{"name": g, "sortOrder": "Asc", "dateGranularity": "None"} for g in groups]
+if os.environ.get("BOOLF"):
+    md["reportBooleanFilter"] = os.environ["BOOLF"]
+json.dump({"reportMetadata": md}, open(out_path, "w"))
+PY
+
+  info "Creating report '${name}' (type ${rtype}, ${fmt}; ${#cols[@]} column(s), ${#filters[@]} filter(s)) ..."
+  [[ ${#cols[@]} -eq 0 ]] && info "Note: no --column given — report will be empty. Add --column <apiName> or clone an existing report."
   sf_rest POST "/services/data/v${API_VERSION}/analytics/reports" "$body"
   /bin/rm -f "$body"
 }
@@ -298,7 +340,14 @@ COMMANDS
   get <id> [--describe]         Fetch a report (--describe = metadata only)
   run <id> [--async]            Run a report and return rows (sync default)
   create --type <apiName> --name <name> [--format TABULAR|SUMMARY|MATRIX]
-                                Create a new empty report of a report type
+         [--column <api>]...  [--filter '<col> <op> <value>']...
+         [--group <api>]...   [--boolean-filter '<expr>']
+         [--gc <value> --gc-column <api>]
+                                Create a report. With no --column it's an empty stub;
+                                add columns/filters/groups to make it usable directly.
+                                --filter is 'COLUMN OPERATOR VALUE' (value may contain
+                                spaces/commas), e.g. --filter 'StageName equals Closed Won'.
+                                --group sets groupingsDown (needed for SUMMARY/MATRIX).
   clone --from <id> --name <name> [--gc <value> --gc-column <apiName>]
                                 Clone an existing report (most reliable create path);
                                 optionally re-point its Global Company filter
