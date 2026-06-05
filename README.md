@@ -21,6 +21,7 @@ so the rough edges get filed down over time.
 | `model-scan`       | Scan provider APIs and docs to keep a project's model table current.                  |
 | `namecheap`        | Domain management via Namecheap's XML API (check, register, DNS, transfer, renew).    |
 | `pair-session`     | AI pair programming: Claude builds, a second model advises. Three styles.             |
+| `salesforce-reports` | Create/clone/run/delete Salesforce Reports via the Analytics REST API + `sf` CLI.   |
 | `second-opinion`   | Independent code review via Codex CLI. Review, challenge, and consult modes.          |
 
 ## Installation
@@ -49,6 +50,7 @@ Skills with their own scripts include a `--setup` flow:
 ```bash
 ~/.claude/skills/namecheap/scripts/nc_api.sh --setup
 ~/.claude/skills/model-scan/scripts/model-scan.ts --setup   # via `npx tsx`
+~/.claude/skills/salesforce-reports/scripts/sfreport.sh setup   # installs sf CLI if missing
 ```
 
 ## Per-skill quick start
@@ -72,6 +74,9 @@ Skills with their own scripts include a `--setup` flow:
   `skills/namecheap/SKILL.md`.
 - **pair-session** — `/pair-session build Refactor the auth module`. See
   `skills/pair-session/SKILL.md`.
+- **salesforce-reports** — `scripts/sfreport.sh setup --org myorg`, then `... list` /
+  `... clone --from <id> --name "Copy"` / `... delete <id> --yes`. Org-agnostic; optional
+  GAM Global Company filter. See `skills/salesforce-reports/SKILL.md`.
 - **second-opinion** — `/second-opinion review`. See `skills/second-opinion/SKILL.md`.
 
 ## Conventions
