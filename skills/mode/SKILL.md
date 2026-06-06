@@ -22,7 +22,7 @@ reviews, and surgically fixes; cheaper or specialized CLIs handle the heavy lift
 
 | Layer | Typical CLI | Strength |
 | ----- | ----------- | -------- |
-| Heavy reading | Gemini CLI | Large context window, fast cold reads |
+| Heavy reading | Antigravity CLI (`agy`) | Large context window, fast cold reads. Replaces the Gemini CLI on consumer plans as of 2026-06-18; enterprise plans may still ship `gemini`. |
 | Heavy writing | Codex CLI | High-throughput code generation |
 | Surgical web search | Perplexity API (or others) | Live docs, breaking changes |
 
@@ -47,9 +47,9 @@ Read `.claude/llm-mode.json` and display:
 ## LLM Mode: <MULTI / SINGLE>
 
 ### Delegation targets (in multi mode)
-  READING (Gemini CLI):      [available / not found]
-  WRITING (Codex CLI):       [available / not found]
-  WEB SEARCH (Perplexity):   [key set / key missing]
+  READING (Antigravity CLI / agy):  [available / not found]
+  WRITING (Codex CLI):              [available / not found]
+  WEB SEARCH (Perplexity):          [key set / key missing]
 
 ### Delegation stats
   Total:     N successful delegations
@@ -63,7 +63,7 @@ Full log:    /mode stats
 To populate the display:
 
 1. Read `.claude/llm-mode.json` for mode and stats.
-2. Check `gemini --version` (or `npx @google/gemini-cli --version`) for Gemini CLI.
+2. Check `agy --version` for Antigravity CLI. Fall back to `gemini --version` for enterprise plans still on the legacy binary.
 3. Check `codex --version` for Codex CLI.
 4. Check `$PERPLEXITY_API_KEY` (or your provider's env var) for web search.
 5. Count entries in `.claude/delegation.log` for the totals.
@@ -72,14 +72,22 @@ If `.claude/llm-mode.json` doesn't exist, show `Mode: SINGLE (default — no con
 
 ## Switch to multi
 
-1. Verify Gemini CLI is installed and authenticated:
+1. Verify the Google delegate CLI is installed and authenticated. Prefer Antigravity CLI
+   (`agy`); fall back to the legacy `gemini` binary for enterprise plans.
 
    ```bash
-   gemini --version 2>/dev/null
-   gemini -p "Reply with exactly: OK" -o text 2>/dev/null
+   # Antigravity CLI (consumer + new enterprise).
+   # The `</dev/null` redirect is mandatory: `agy -p "..."` deadlocks waiting for
+   # TTY input even when a prompt arg is supplied.
+   agy --version 2>/dev/null \
+     || gemini --version 2>/dev/null
+
+   agy -p "Reply with exactly: OK" </dev/null 2>/dev/null \
+     || gemini -p "Reply with exactly: OK" -o text 2>/dev/null
    ```
 
-   If the auth check fails, abort with installation/auth instructions.
+   If the auth check fails, abort with installation/auth instructions. For `agy`,
+   the install command is `curl -fsSL https://antigravity.google/cli/install.sh | bash`.
 
 2. Update `.claude/llm-mode.json`: set `mode` to `"multi"`, update `updated_at` to the
    current ISO timestamp.
@@ -155,6 +163,9 @@ Increment `stats.delegations_failed`.
   or the stats view gets slow.
 - **Mode is per-project.** Each project has its own `.claude/llm-mode.json`. Setting it
   in one project does not affect siblings.
+- **`agy -p "<prompt>"` requires `</dev/null`.** Without the stdin redirect, Antigravity
+  CLI waits on a TTY even when a prompt arg is given. The probe in "Switch to multi"
+  uses the canonical `agy -p "..." </dev/null` form; mirror it in every other call site.
 
 ## Anti-patterns
 

@@ -62,7 +62,7 @@ If not authenticated, tell the user to run `! codex login` (interactive).
 
 Three advisors are available:
 - **Codex (default)**: OpenAI gpt-5.5 via Codex CLI — subscription-based. Pass `--codex-model gpt-5.5` for the sharper Diagnostician model (slower, ~2× cost).
-- **Gemini**: Google gemini-3.1-pro via Gemini CLI — subscription-based. Add `--skip-trust` if running from non-trusted dir (Gemini CLI 0.39+).
+- **Gemini**: Google gemini-3.1-pro via Antigravity CLI (`agy`) — subscription-based. `agy` replaces the sunset Gemini CLI on consumer plans as of 2026-06-18; enterprise plans may still ship `gemini`. The `--advisor gemini` flag stays (it names the model seat, not the binary).
 - **DeepSeek-v4** (optional): via OpenAI-compatible API at `api.deepseek.com` — needs `DEEPSEEK_API_KEY`. Strong field-engineer voice (web-fresh, ready-to-paste artifacts, tabular).
 
 Use `--advisor gemini` or `-a g` to switch advisors. `--advisor deepseek` / `-a d` for DeepSeek.
@@ -284,8 +284,12 @@ When invoked with `/pair-session build <task>`:
    codex --version 2>/dev/null || echo "UNAVAILABLE"
    grep -q '"auth_mode": "chatgpt"' ~/.codex/auth.json && echo "OK" || echo "AUTH_ERROR"
 
-   # For Gemini (if --advisor gemini)
-   gemini --version 2>/dev/null || echo "UNAVAILABLE"
+   # For Gemini (if --advisor gemini) — `agy` first, legacy `gemini` as enterprise fallback.
+   # When invoking `agy` non-interactively, always use `agy -p "<prompt>" </dev/null`;
+   # without the stdin redirect, `agy` deadlocks waiting on a TTY.
+   agy --version 2>/dev/null \
+     || gemini --version 2>/dev/null \
+     || echo "UNAVAILABLE"
    ```
 
 2. Create session state file:
@@ -646,14 +650,16 @@ Log a knowledge transfer when:
 
 If selected advisor CLI is unavailable:
 ```
-### WARNING: [Codex|Gemini] CLI unavailable
+### WARNING: [Codex|Antigravity (agy)] CLI unavailable
 Running in Claude-only mode. Install advisor CLI for full pair programming:
 
   # For Codex (default):
   npm install -g @openai/codex && codex login
 
-  # For Gemini:
-  npm install -g @anthropic-ai/gemini-cli && gemini login
+  # For Gemini seat — Antigravity CLI (`agy`), the replacement for the sunset
+  # Gemini CLI on consumer plans as of 2026-06-18. Enterprise plans may still
+  # use `gemini` directly.
+  curl -fsSL https://antigravity.google/cli/install.sh | bash && agy login
 ```
 Continue with Claude implementing and self-reviewing (reduced effectiveness).
 
@@ -689,6 +695,10 @@ After 10 turns, summarize older turns to prevent context exhaustion:
   proposal is longer than 200 lines, ask it to compress before Claude implements.
 - **Context drift over long sessions.** After ~10 turns the advisor loses earlier
   context. The summarization step is mandatory, not optional.
+- **`agy -p "<prompt>"` without `</dev/null` deadlocks.** Antigravity CLI waits on
+  a TTY for stdin even when a prompt arg is given. Use `agy -p "<prompt>" </dev/null`
+  in every scripted call site; the version probe in Phase 1 is the only `agy`
+  invocation without it and it doesn't take a `-p` arg.
 
 ## Anti-patterns
 

@@ -80,6 +80,48 @@ const FALLBACK_PRICING: Record<string, { in: number; out: number }> = {
   "gemini-3-pro": { in: 1.25, out: 5 },
 };
 
+// CLI_EXTRAS — non-API CLIs that share the provider namespace. These are not scanned
+// via /models endpoints (they don't expose one); the catalogue exists so CLAUDE.md
+// regeneration and downstream tooling stay aware of which binary serves which provider.
+//
+// Antigravity CLI (`agy`) replaced the Gemini CLI on consumer plans on 2026-06-18.
+// Enterprise plans (Gemini Code Assist Standard/Enterprise, Google Cloud paid keys)
+// may continue to ship the legacy `gemini` binary; both share the same API and
+// `GEMINI_API_KEY` env var.
+const CLI_EXTRAS: Array<{
+  name: string;
+  binary: string;
+  provider: string;
+  install: string;
+  notes: string;
+}> = [
+  {
+    name: "Claude Code",
+    binary: "claude",
+    provider: "anthropic",
+    install: "npm install -g @anthropic-ai/claude-code",
+    notes: "Anthropic's coding CLI — same models as the API.",
+  },
+  {
+    name: "Codex CLI",
+    binary: "codex",
+    provider: "openai",
+    install: "npm install -g @openai/codex",
+    notes: "ChatGPT Business subscription auth via `codex login`.",
+  },
+  {
+    name: "Antigravity CLI",
+    binary: "agy",
+    provider: "google",
+    install: "curl -fsSL https://antigravity.google/cli/install.sh | bash",
+    notes:
+      "Replaces Gemini CLI on consumer plans (sunset 2026-06-18). " +
+      "Enterprise plans may keep `gemini`. Non-interactive form must be " +
+      "`agy -p \"<prompt>\" </dev/null` — without the stdin redirect, `agy` " +
+      "deadlocks waiting on a TTY even when a prompt arg is supplied.",
+  },
+];
+
 async function scanOpenAI(): Promise<Model[]> {
   if (!process.env.OPENAI_API_KEY) {
     console.log("[skip] OpenAI — no OPENAI_API_KEY");
@@ -193,10 +235,11 @@ async function main() {
 
   fs.writeFileSync(
     path.join(OUT_DIR, `${DATE}.json`),
-    JSON.stringify({ date: DATE, models }, null, 2),
+    JSON.stringify({ date: DATE, models, cli_extras: CLI_EXTRAS }, null, 2),
   );
 
   console.log(`Scanned ${models.length} models across ${new Set(models.map(m => m.provider)).size} providers.`);
+  console.log(`CLI catalogue: ${CLI_EXTRAS.map((c) => c.binary).join(", ")}`);
   console.log(`JSON: ${path.join(OUT_DIR, `${DATE}.json`)}`);
   console.log(`Docs: ${DOCS_DIR}`);
 

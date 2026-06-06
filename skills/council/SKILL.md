@@ -119,8 +119,12 @@ docs/council-sessions/YYYY-MM-DD-<slug>/
 ## Provider invocation
 
 The skill assumes CLI access to the underlying providers. Use whichever wrapper you
-prefer — Codex CLI for OpenAI, Gemini CLI for Google, curl for the OpenAI-compatible
-endpoints (Moonshot, DeepSeek). Example for Moonshot:
+prefer — Codex CLI for OpenAI, Antigravity CLI (`agy`) for Google (replaces the sunset
+Gemini CLI on consumer plans as of 2026-06-18; enterprise plans may still use the
+legacy `gemini` binary), curl for the OpenAI-compatible endpoints (Moonshot, DeepSeek).
+Model identifiers like `gemini-3-pro` are unaffected by the CLI rename and resolve
+under `agy` directly. When scripting `agy`, use `agy -p "<prompt>" </dev/null` — the
+stdin redirect is mandatory or `agy` deadlocks on TTY input. Example for Moonshot:
 
 ```bash
 curl -s https://api.moonshot.ai/v1/chat/completions \
@@ -151,8 +155,9 @@ Environment variables (all optional — defaults are picked to maximize each sea
 | `KIMI_API_KEY`             | —                            | Required for Provocateur             |
 | `DEEPSEEK_API_KEY`         | —                            | Required for Field Engineer          |
 
-Codex CLI and Gemini CLI auth in their usual config files (ChatGPT subscription auth or
-Google subscription auth). API keys are only needed for Moonshot and DeepSeek.
+Codex CLI and Antigravity CLI (`agy`) auth in their usual config files (ChatGPT
+subscription auth or Google subscription auth). API keys are only needed for Moonshot
+and DeepSeek. `GEMINI_API_KEY` is unchanged — Google did not rename the env var.
 
 ## Collaborative mode (`--collab`)
 

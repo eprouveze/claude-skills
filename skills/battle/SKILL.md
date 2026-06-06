@@ -1,8 +1,9 @@
 ---
 name: battle
 description: >
-  Benchmark AI model combinations on the same coding task. Runs Claude, Gemini CLI,
-  Codex CLI, Kimi (Moonshot API), and DeepSeek (OpenAI-compatible API) solo and in pairs,
+  Benchmark AI model combinations on the same coding task. Runs Claude, Antigravity CLI
+  (agy — replaces the sunset Gemini CLI on consumer plans as of 2026-06-18), Codex CLI,
+  Kimi (Moonshot API), and DeepSeek (OpenAI-compatible API) solo and in pairs,
   then scores each on tokens, cost, wall time, and output quality. Produces a leaderboard
   to inform future model selection. Use when asked to "battle", "benchmark models",
   "compare models", "which model is best", "pair programming battle", or "/battle".
@@ -34,7 +35,7 @@ on **time**, **tokens**, **cost**, and **quality** to find the optimal setup.
 | ID | Label | How It Runs |
 |----|-------|-------------|
 | C  | **Claude Solo** | Claude writes code directly (native tools) — Opus 4.7 |
-| G  | **Gemini Solo** | Gemini CLI generates code — gemini-2.5-pro |
+| G  | **Gemini Solo** | Antigravity CLI (`agy`) generates code — gemini-2.5-pro (model name unchanged) |
 | X  | **Codex Solo (gpt-5.5)** | Codex CLI default — `codex exec --model gpt-5.5` |
 | X5 | **Codex Solo (gpt-5.5)** | Codex CLI premium — `codex exec --model gpt-5.5` |
 | K  | **Kimi Solo** | Moonshot K2.6 via API curl — needs `KIMI_API_KEY` |
@@ -95,9 +96,14 @@ if [ -n "$DIRTY" ]; then
 fi
 
 # 2. Check available models
-GEMINI_AVAILABLE=false
-if which gemini >/dev/null 2>&1; then
-  GEMINI_AVAILABLE=true
+# As of 2026-06-18, the Google seat runs through `agy` (Antigravity CLI) on
+# consumer plans. Enterprise plans still ship `gemini`; fall back to it if `agy`
+# is missing.
+AGY_AVAILABLE=false
+if which agy >/dev/null 2>&1; then
+  AGY_AVAILABLE=true
+elif which gemini >/dev/null 2>&1; then
+  AGY_AVAILABLE=true  # enterprise fallback — legacy binary, same API key
 fi
 
 CODEX_AVAILABLE=false
@@ -123,7 +129,7 @@ for CONTESTANT in claude gemini codex claude-gemini claude-codex gemini-codex al
 done
 
 echo "BATTLE_ID=$BATTLE_ID"
-echo "GEMINI=$GEMINI_AVAILABLE"
+echo "AGY=$AGY_AVAILABLE"
 echo "CODEX=$CODEX_AVAILABLE"
 echo "WORKTREES=$(ls -d $BATTLE_DIR/*/)"
 ```
@@ -140,13 +146,13 @@ on their battle branch (`battle/<id>/<contestant>`).
 | Available | Contestants |
 |-----------|-------------|
 | Both CLIs | All 7: C, G, X, CG, CX, GX, CGX |
-| Only Gemini | 3: C, G, CG |
+| Only `agy` | 3: C, G, CG |
 | Only Codex | 3: C, X, CX |
 | Neither | 1: C only (no battle possible — inform user) |
 
 If only Claude is available, tell the user:
-> No external CLIs found. Install `gemini` and/or `codex` to run battles.
-> - Gemini: `npm install -g @anthropic-ai/gemini-cli` or check docs
+> No external CLIs found. Install `agy` (Antigravity CLI) and/or `codex` to run battles.
+> - Antigravity CLI: `curl -fsSL https://antigravity.google/cli/install.sh | bash` (replaces the sunset Gemini CLI on consumer plans as of 2026-06-18; enterprise users keep `gemini`)
 > - Codex: `npm install -g @openai/codex`
 
 ### Step 2: Build the Battle Prompt
@@ -197,7 +203,9 @@ Measure wall-clock time from agent launch to commit.
 cd "$BATTLE_DIR/gemini"
 START_G=$(date +%s%N)
 
-gemini -p "$BATTLE_PROMPT" 2>"$BATTLE_DIR/gemini-stderr.txt"
+# `agy -p "..."` deadlocks waiting for TTY input even when a prompt arg is given.
+# The `</dev/null` redirect is mandatory for non-interactive use. See "Known gotchas".
+agy -p "$BATTLE_PROMPT" </dev/null 2>"$BATTLE_DIR/gemini-stderr.txt"
 
 END_G=$(date +%s%N)
 TIME_G=$(( (END_G - START_G) / 1000000 ))
@@ -640,7 +648,7 @@ Offer: "Clean up battle worktrees? (Y/n) — diffs and metrics are preserved eit
 
 | Error | Action |
 |-------|--------|
-| Gemini CLI unavailable | Skip G, CG, GX, CGX contestants. Note in report. |
+| `agy` (Antigravity CLI) unavailable | Skip G, CG, GX, CGX contestants. Note in report. Fall back to legacy `gemini` if present (enterprise plans). |
 | Codex CLI unavailable | Skip X, CX, GX, CGX contestants. Note in report. |
 | Model timeout (>300s) | Record as DNF. Score: 0. Time: 300000ms. |
 | Empty diff (no changes) | Score: 0 across all dimensions. Note in report. |
@@ -665,6 +673,11 @@ Offer: "Clean up battle worktrees? (Y/n) — diffs and metrics are preserved eit
   of the same prompt. Randomize contestant order across runs.
 - **`git worktree` can leak across battles** if a run fails mid-way. `git worktree prune`
   every few battles.
+- **`agy -p "<prompt>"` deadlocks without `</dev/null`.** Antigravity CLI waits on a
+  TTY for stdin even when a `-p` prompt arg is supplied. The canonical non-interactive
+  form is `agy -p "<prompt>" </dev/null`. A naked `agy -p "..."` will hang past any
+  reasonable battle timeout and the contestant will appear as DNF. Treat this as a
+  hard rule, not a workaround. Smoke-tested on `agy` v1.0.3+ macOS.
 
 ## Self-improvement
 
