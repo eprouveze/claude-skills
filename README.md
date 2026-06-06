@@ -15,14 +15,18 @@ so the rough edges get filed down over time.
 | `brief`            | Project-aware session briefing. Loads project-intel, decisions, deferred actions.     |
 | `codex-write`      | Delegate heavy code generation to Codex CLI while Claude orchestrates and reviews.    |
 | `council`          | Five-model strategic advisory with role-locked seats and a synthesis pass.            |
+| `crawl`            | Tiered web fetcher → clean markdown. Direct fetch (zero-setup) + optional Cloudflare. |
 | `deslop`           | Strip 22 common AI-writing tells from drafts (em-dashes, gift-wrapped endings, etc.). |
 | `evaluate-plan`    | Coverage check on an implementation plan against its source requirements.             |
+| `keyword-research` | Google Trends interest + related queries for SEO and content prioritization.          |
 | `mode`             | Toggle single-LLM vs multi-LLM routing for skills that support delegation.            |
 | `model-scan`       | Scan provider APIs and docs to keep a project's model table current.                  |
 | `namecheap`        | Domain management via Namecheap's XML API (check, register, DNS, transfer, renew).    |
 | `pair-session`     | AI pair programming: Claude builds, a second model advises. Three styles.             |
+| `plan`             | Research-first planning: parallel sub-agents explore the codebase, then a plan doc.   |
 | `salesforce-reports` | Create/clone/run/delete Salesforce Reports via the Analytics REST API + `sf` CLI.   |
 | `second-opinion`   | Independent code review via Codex CLI. Review, challenge, and consult modes.          |
+| `update-machine`   | Safe parallel package sweep (brew/npm/pipx/uv) with accumulated upgrade-trap guards.  |
 
 ## Installation
 
@@ -63,10 +67,16 @@ Skills with their own scripts include a `--setup` flow:
   Delegates to Codex CLI. See `skills/codex-write/SKILL.md`.
 - **council** — `/council Should we migrate from REST to GraphQL?`. Five-seat advisory
   with synthesis. See `skills/council/SKILL.md`.
+- **crawl** — `npx tsx skills/crawl/scripts/crawl.ts "https://example.com"`. Direct fetch
+  works with no setup; set `CLOUDFLARE_*` env vars to enable JS rendering. See
+  `skills/crawl/SKILL.md`.
 - **deslop** — `/deslop content/blog/my-post.mdx`. Scans for 22 AI-tell patterns. See
   `skills/deslop/SKILL.md`.
 - **evaluate-plan** — `/evaluate-plan @prd.md`. Coverage report. See
   `skills/evaluate-plan/SKILL.md`.
+- **keyword-research** — `npm i google-trends-api`, then
+  `npx tsx skills/keyword-research/scripts/keyword-research.ts --keywords "a, b, c"`. See
+  `skills/keyword-research/SKILL.md`.
 - **mode** — `/mode`, `/mode multi`, `/mode stats`. See `skills/mode/SKILL.md`.
 - **model-scan** — `/model-scan`. Refreshes the model table. See
   `skills/model-scan/SKILL.md`.
@@ -74,10 +84,14 @@ Skills with their own scripts include a `--setup` flow:
   `skills/namecheap/SKILL.md`.
 - **pair-session** — `/pair-session build Refactor the auth module`. See
   `skills/pair-session/SKILL.md`.
+- **plan** — `/plan Add multi-currency support to checkout`. Parallel research, then a
+  structured plan in `docs/plans/`. See `skills/plan/SKILL.md`.
 - **salesforce-reports** — `scripts/sfreport.sh setup --org myorg`, then `... list` /
   `... clone --from <id> --name "Copy"` / `... delete <id> --yes`. Org-agnostic; optional
   GAM Global Company filter. See `skills/salesforce-reports/SKILL.md`.
 - **second-opinion** — `/second-opinion review`. See `skills/second-opinion/SKILL.md`.
+- **update-machine** — `/update-machine`. Surveys + safely upgrades brew/npm/pipx/uv,
+  holding session-critical casks for confirmation. See `skills/update-machine/SKILL.md`.
 
 ## Conventions
 
