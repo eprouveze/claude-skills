@@ -49,7 +49,13 @@ Setup:
 1. Sign in at `https://dash.cloudflare.com` and copy your **Account ID** (right sidebar).
 2. Create an API token at `https://dash.cloudflare.com/profile/api-tokens` with the
    **Account → Browser Rendering → Edit** permission. Copy it once — it isn't shown again.
-3. Export both (shell rc, or a `.env` file in your home dir — the script auto-loads `~/.env`):
+3. Run the interactive setup, which writes `~/.config/claude-skills/crawl.env` (mode 600)
+   and is auto-loaded on every run:
+   ```bash
+   npx tsx scripts/crawl.ts --setup
+   ```
+   Prefer env vars? Export them instead (or put them in `~/.env`) — both are auto-loaded,
+   with the skill config taking precedence:
    ```bash
    export CLOUDFLARE_ACCOUNT_ID="your-account-id"
    export CLOUDFLARE_BR_TOKEN="your-api-token"
