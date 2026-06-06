@@ -55,6 +55,7 @@ Skills with their own scripts include a `--setup` flow:
 ~/.claude/skills/namecheap/scripts/nc_api.sh --setup
 ~/.claude/skills/model-scan/scripts/model-scan.ts --setup   # via `npx tsx`
 ~/.claude/skills/salesforce-reports/scripts/sfreport.sh setup   # installs sf CLI if missing
+npx tsx ~/.claude/skills/crawl/scripts/crawl.ts --setup   # optional Cloudflare creds
 ```
 
 ## Per-skill quick start
@@ -68,8 +69,8 @@ Skills with their own scripts include a `--setup` flow:
 - **council** — `/council Should we migrate from REST to GraphQL?`. Five-seat advisory
   with synthesis. See `skills/council/SKILL.md`.
 - **crawl** — `npx tsx skills/crawl/scripts/crawl.ts "https://example.com"`. Direct fetch
-  works with no setup; set `CLOUDFLARE_*` env vars to enable JS rendering. See
-  `skills/crawl/SKILL.md`.
+  works with no setup; run `... --setup` (or set `CLOUDFLARE_*` env vars) to enable the
+  JS-rendering tier. See `skills/crawl/SKILL.md`.
 - **deslop** — `/deslop content/blog/my-post.mdx`. Scans for 22 AI-tell patterns. See
   `skills/deslop/SKILL.md`.
 - **evaluate-plan** — `/evaluate-plan @prd.md`. Coverage report. See
@@ -127,7 +128,9 @@ The pattern, in three pieces:
 
 Triggers to consolidate: explicit user correction (2–3 on the same theme is the loudest
 signal), a novel input category recurring, the underlying model version changing, or a
-breaking change in an external CLI the skill calls.
+breaking change in an external CLI the skill calls — including vendor renames (e.g., the
+Gemini CLI → Antigravity CLI (`agy`) transition in May 2026, applied across this repo in
+[v0.1.1: agy migration]).
 
 The pattern is intentionally minimal. It does not require a runtime, a database, or any
 tooling beyond text files. Edit `learnings.md` by hand; consolidate by hand; trust the

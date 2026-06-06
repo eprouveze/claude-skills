@@ -138,6 +138,14 @@ The reference driver looks for:
 
 Missing keys cause the affected provider to be skipped, not the whole run to fail.
 
+> **Gemini CLI → Antigravity CLI rename (2026-06-18).** The user-facing binary for
+> the Google seat is now `agy` on consumer plans; enterprise plans may keep `gemini`.
+> The API endpoint (`generativelanguage.googleapis.com/v1beta/models`) and
+> `GEMINI_API_KEY` env var are unchanged, so the scanner itself needs no edits.
+> `CLI_EXTRAS` in the driver lists `agy` alongside Codex CLI and Claude Code for
+> reference; downstream tooling should treat both `agy` and the legacy `gemini`
+> binary as valid Google delegates.
+
 ## Known gotchas
 
 - **Doc parsers are fragile.** Providers reshuffle their docs every few months. When TBDs

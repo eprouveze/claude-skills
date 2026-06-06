@@ -22,13 +22,21 @@ works, and what to avoid before doing anything else.
 ## Optional delegation mode
 
 If the project has `.claude/llm-mode.json` and its `mode` is `"multi"`, delegate the heavy
-doc reading to a cheaper CLI (Gemini CLI is a common pick) and only pull the result back to
-synthesize. If the file is absent or mode is `"single"`, run the standard path. If the
-delegated call fails, fall back to standard silently.
+doc reading to a cheaper CLI (Antigravity CLI — `agy`, previously the Gemini CLI — is a
+common pick). Only pull the result back to synthesize. If the file is absent or mode is
+`"single"`, run the standard path. If the delegated call fails, fall back to standard
+silently.
 
 Example delegated call:
 
 ```bash
+# `agy` (Antigravity CLI) replaces the sunset Gemini CLI on consumer plans as of
+# 2026-06-18; enterprise plans may still use the legacy `gemini` binary. The model
+# identifier (`gemini-3-pro`) is unchanged.
+#
+# Note: piping into `agy` already provides stdin, so the `</dev/null` gotcha that
+# applies to bare `agy -p "..."` doesn't bite here. For non-piped scripted calls
+# elsewhere, always write `agy -p "<prompt>" </dev/null`.
 echo "You are a research analyst. I am about to work on: $TASK.
 
 Review the attached documentation and output a Pre-Task Briefing:
@@ -40,7 +48,7 @@ Review the attached documentation and output a Pre-Task Briefing:
 6. RECOMMENDATIONS — specific suggestions
 
 Cite source file paths. Omit empty sections." | \
-  gemini -m gemini-3-pro -p "" @.claude/project-intel.md @docs/ > .brief-temp.md
+  agy -m gemini-3-pro -p "" @.claude/project-intel.md @docs/ > .brief-temp.md
 ```
 
 ## Standard load order
