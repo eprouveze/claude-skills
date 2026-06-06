@@ -17,12 +17,14 @@
  *   npx tsx crawl.ts --batch <file>           # Batch: one URL per line
  *   npx tsx crawl.ts <url> --tier cf           # Cloudflare only
  *   npx tsx crawl.ts <url> --tier direct       # Direct fetch only (no setup needed)
+ *   npx tsx crawl.ts --setup                   # Interactive config writer
  *
- * Environment (optional — enables the Cloudflare Browser Rendering tier):
+ * Config / environment (optional — enables the Cloudflare Browser Rendering tier):
  *   CLOUDFLARE_BR_TOKEN    — Cloudflare API token with "Browser Rendering - Edit" scope
  *   CLOUDFLARE_ACCOUNT_ID  — Cloudflare account ID
- *   Both are read from ~/.env if not already in the environment.
  *   GEMINI_API_KEY / GOOGLE_AI_API_KEY — optional, only for --summarize.
+ *   Auto-loaded from ~/.config/claude-skills/crawl.env (written by --setup), then ~/.env.
+ *   Skill config wins over ~/.env; both fall back to the live environment.
  *
  * Exit codes:
  *   0 — success
@@ -30,13 +32,85 @@
  *   2 — invalid arguments
  */
 
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  chmodSync,
+} from "fs";
 import { resolve } from "path";
-import dotenv from "dotenv";
+import { createInterface } from "node:readline/promises";
+import { stdin as input, stdout as output } from "node:process";
 
-// Load env from ~/.env (optional)
-const homeEnv = resolve(process.env.HOME || "~", ".env");
-if (existsSync(homeEnv)) dotenv.config({ path: homeEnv });
+// Minimal zero-dependency .env loader. Sets a key only if it isn't already in the
+// live environment, so precedence is: live env > first file loaded > later files.
+function loadEnvFile(file: string): void {
+  if (!existsSync(file)) return;
+  for (const raw of readFileSync(file, "utf-8").split("\n")) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    let val = line.slice(eq + 1).trim();
+    if (
+      (val.startsWith('"') && val.endsWith('"')) ||
+      (val.startsWith("'") && val.endsWith("'"))
+    ) {
+      val = val.slice(1, -1); // strip surrounding quotes
+    }
+    if (key && process.env[key] === undefined) process.env[key] = val;
+  }
+}
+
+// Precedence: live env > skill config > ~/.env
+const CONFIG_FILE = resolve(
+  process.env.HOME || "~",
+  ".config/claude-skills/crawl.env",
+);
+loadEnvFile(CONFIG_FILE);
+loadEnvFile(resolve(process.env.HOME || "~", ".env"));
+
+// ---------------------------------------------------------------------------
+// Interactive setup — writes ~/.config/claude-skills/crawl.env (mode 600)
+// ---------------------------------------------------------------------------
+
+async function runSetup(): Promise<void> {
+  const dir = resolve(process.env.HOME || "~", ".config/claude-skills");
+  mkdirSync(dir, { recursive: true });
+
+  console.log("crawl — Cloudflare Browser Rendering setup");
+  console.log(
+    "The Cloudflare tier is OPTIONAL — direct fetch always works without it.",
+  );
+  console.log("Leave a value blank to skip it.\n");
+
+  const rl = createInterface({ input, output });
+  const account = (await rl.question("Cloudflare Account ID: ")).trim();
+  const token = (
+    await rl.question("Cloudflare Browser Rendering API token: ")
+  ).trim();
+  const gemini = (
+    await rl.question("Gemini API key (optional, for --summarize): ")
+  ).trim();
+  rl.close();
+
+  const lines = ["# crawl skill config — written by `crawl.ts --setup`"];
+  if (account) lines.push(`CLOUDFLARE_ACCOUNT_ID=${account}`);
+  if (token) lines.push(`CLOUDFLARE_BR_TOKEN=${token}`);
+  if (gemini) lines.push(`GEMINI_API_KEY=${gemini}`);
+
+  writeFileSync(CONFIG_FILE, lines.join("\n") + "\n", { mode: 0o600 });
+  chmodSync(CONFIG_FILE, 0o600); // enforce even if the file pre-existed
+
+  console.log(`\nWrote ${CONFIG_FILE} (mode 600).`);
+  console.log(
+    account && token
+      ? 'Cloudflare tier enabled. Test: npx tsx scripts/crawl.ts "https://example.com" --tier cf'
+      : "No Cloudflare creds set — crawl runs in direct-fetch-only mode.",
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -427,9 +501,15 @@ async function crawlBatch(
 async function main() {
   const args = process.argv.slice(2);
 
+  if (args.includes("--setup")) {
+    await runSetup();
+    process.exit(0);
+  }
+
   if (args.length === 0 || args.includes("--help") || args.includes("-h")) {
     console.log(`Usage: npx tsx crawl.ts <url> [options]
        npx tsx crawl.ts --batch <file> [options]
+       npx tsx crawl.ts --setup
 
 Options:
   --format markdown|html   Output format (default: markdown)
@@ -438,7 +518,13 @@ Options:
   --batch <file>           Read URLs from file (one per line)
   --json                   Output as JSON (useful for scripting)
   --summarize              Add LLM-generated exec summary (uses Gemini Flash)
-  -h, --help               Show this help`);
+  --setup                  Interactively write ~/.config/claude-skills/crawl.env
+  -h, --help               Show this help
+
+Config (optional — enables the Cloudflare Browser Rendering tier):
+  Auto-loaded from ~/.config/claude-skills/crawl.env, then ~/.env.
+  CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_BR_TOKEN — Browser Rendering tier
+  GEMINI_API_KEY / GOOGLE_AI_API_KEY         — optional, for --summarize`);
     process.exit(args.length === 0 ? 2 : 0);
   }
 
