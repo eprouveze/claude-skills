@@ -136,6 +136,14 @@ The pattern is intentionally minimal. It does not require a runtime, a database,
 tooling beyond text files. Edit `learnings.md` by hand; consolidate by hand; trust the
 SKILL.md body as the source of truth.
 
+## Related
+
+- **[heartbeat](https://github.com/eprouveze/heartbeat)** — an autonomous work loop for a
+  Claude Code session: it wakes itself, reads ground truth, advances one item per tick
+  inside a hard envelope, and queues anything irreversible to a human. It's a separate repo
+  rather than a skill here because it's a small runtime system (a tick-protocol skill plus a
+  launcher, board template, durability check, and an off-machine liveness watchdog).
+
 ## Contributing
 
 Adding a skill:
