@@ -7,6 +7,21 @@ These are skills the author uses daily, cleaned up for public consumption. They 
 polished products — they are working tools with rough edges, shipped with a feedback loop
 so the rough edges get filed down over time.
 
+## New here?
+
+A **skill** is a folder of plain-text instructions that Claude Code reads and follows.
+You trigger one by typing its name with a slash — `/council`, `/deslop`, `/plan`. Some
+skills also ship a small helper script.
+
+To use any of these you need [Claude Code](https://docs.claude.com/en/docs/claude-code/overview)
+installed. The prompt-only skills then work right away — no terminal, no git, no keys. A few
+call an extra tool, key, or model; the [next table](#what-each-skill-needs) says which. New to
+the idea of skills? See the official
+[Agent Skills guide](https://docs.claude.com/en/docs/claude-code/skills).
+
+Want to just try one? Pick a ✅ skill in the table below and follow
+[the easy install](#the-easy-way-no-command-line) — those need nothing beyond Claude Code.
+
 ## What's inside
 
 | Skill              | What it does                                                                          |
@@ -28,14 +43,55 @@ so the rough edges get filed down over time.
 | `second-opinion`   | Independent code review via Codex CLI. Review, challenge, and consult modes.          |
 | `update-machine`   | Safe parallel package sweep (brew/npm/pipx/uv) with accumulated upgrade-trap guards.  |
 
+## What each skill needs
+
+Most need nothing beyond Claude Code. A few call another model, a key, or a Node package.
+
+| Skill | Claude Code alone? | For the full thing |
+| --- | --- | --- |
+| `brief`, `deslop`, `evaluate-plan`, `mode`, `plan` | ✅ | — |
+| `crawl` | ✅ basic | Node (`npx tsx`); Cloudflare keys for JS-heavy pages |
+| `update-machine` | ✅ | the package managers you already use (brew/npm/pipx/uv) |
+| `battle` | ◑ partial | Antigravity + Codex CLI to benchmark the full model field |
+| `council` | ◑ partial | access to the other models (their CLIs or API keys) |
+| `pair-session` | ◑ partial | a second-model CLI (Antigravity or Codex) |
+| `codex-write`, `second-opinion` | — | Codex CLI |
+| `keyword-research` | — | Node + the `google-trends-api` package |
+| `model-scan` | — | provider API keys, plus Node |
+| `namecheap` | — | a Namecheap API key |
+| `salesforce-reports` | — | the `sf` CLI and a Salesforce org |
+
+✅ works as-is &middot; ◑ works, but better with extra models &middot; — needs the listed setup first
+
 ## Installation
 
-These skills follow the standard Claude Code skill layout. Two install patterns work:
+### The easy way (no command line)
+
+You don't need git, or even a terminal.
+
+**Option A — let Claude Code install it.** Open Claude Code and ask:
+
+> Install the `council` skill from https://github.com/eprouveze/claude-skills
+
+Claude Code can fetch the files and put them in the right place for you. Swap `council` for
+whichever skill you want.
+
+**Option B — download the ZIP.**
+
+1. Click the green **Code** button near the top of
+   [this page](https://github.com/eprouveze/claude-skills), then **Download ZIP**
+   (direct link: [main.zip](https://github.com/eprouveze/claude-skills/archive/refs/heads/main.zip)).
+2. Unzip it.
+3. Copy the folder of the skill you want — for example `skills/council` — into your skills
+   folder: `~/.claude/skills/` for all projects, or `.claude/skills/` inside one project.
+4. Restart Claude Code.
+
+### With git (for developers)
 
 **Global (all projects):**
 
 ```bash
-git clone https://github.com/<you>/claude-skills.git ~/.claude/skills-source
+git clone https://github.com/eprouveze/claude-skills.git ~/.claude/skills-source
 # Symlink or copy individual skills into ~/.claude/skills/
 ln -s ~/.claude/skills-source/skills/council ~/.claude/skills/council
 ```
@@ -43,7 +99,7 @@ ln -s ~/.claude/skills-source/skills/council ~/.claude/skills/council
 **Per-project:**
 
 ```bash
-git clone https://github.com/<you>/claude-skills.git
+git clone https://github.com/eprouveze/claude-skills.git
 cp -r claude-skills/skills/council .claude/skills/council
 ```
 
@@ -57,6 +113,18 @@ Skills with their own scripts include a `--setup` flow:
 ~/.claude/skills/salesforce-reports/scripts/sfreport.sh setup   # installs sf CLI if missing
 npx tsx ~/.claude/skills/crawl/scripts/crawl.ts --setup   # optional Cloudflare creds
 ```
+
+## Before you run
+
+These are real tools, not toys — a few can spend money or change things on your systems:
+
+- `namecheap` can **register, transfer, and renew domains**, which bills your account.
+- `salesforce-reports` can **delete** reports in your Salesforce org.
+- `update-machine` upgrades packages installed on your machine.
+
+Treat them like any code off the internet: skim the skill's `SKILL.md` and any script under
+its `scripts/` folder before running. Every script accepts `--help`, and credential setup
+writes to `~/.config/claude-skills/<skill>.env` — never into the skill source.
 
 ## Per-skill quick start
 
