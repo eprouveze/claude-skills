@@ -9,7 +9,7 @@ description: >
   paths; this skill enforces the only working route (base64 `content` + `filename`) and
   documents the size envelope.
 allowed-tools: Bash, Read
-version: 0.1.2
+version: 0.1.3
 last-updated: 2026-06-17
 last-consolidated: 2026-06-17
 metadata:
@@ -185,6 +185,19 @@ Don't zip silently — the user expects discrete files.
   on macOS produces standard.
 - ❌ Mixing `path` and `content` in the same attachment object. Pick one (always
   `content`).
+- ❌ **Treating `osascript` exit `true` as "delivered".** AppleScript Mail.app returns
+  `true` from a successful `send` call, but that only means the script ran — the message
+  may sit in Outbox indefinitely if the account auth is stale, the network is offline,
+  or some other silent Mail.app condition fires. Verify by checking sent mail (or
+  asking the user) before claiming success. Same general principle applies to any
+  fire-and-forget send mechanism.
+- ❌ **Sending from a personal account out of a work environment.** When operating in
+  a work session (e.g., Salesforce-managed laptop), do not propose AppleScript Mail.app
+  routes that would send via a personal iCloud / Gmail / etc. account. Even when the
+  recipient is the operator themselves, mixing personal-account egress with
+  work-context content is a mandate-vs-campagne-style boundary violation. If the only
+  Mail.app account configured is personal, that route is **disqualified** for work
+  content — fall back to the manual-compose escape hatch in the work webmail.
 
 ## Validated patterns
 
