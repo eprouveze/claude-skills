@@ -9,7 +9,7 @@ description: >
   paths; this skill enforces the only working route (base64 `content` + `filename`) and
   documents the size envelope.
 allowed-tools: Bash, Read
-version: 0.1.0
+version: 0.1.1
 last-updated: 2026-06-17
 last-consolidated: 2026-06-17
 metadata:
@@ -77,14 +77,28 @@ Use the Read tool on the `.b64` file. The Read tool returns the full content on 
 with a `1\t` line-number prefix that you must strip (the actual content starts after the
 tab character).
 
-**Size envelope.** The base64 is ~1.37× the original size. Keep the encoded payload
-**under ~50 KB** to be safe in a single tool call. Above that, expect copy-paste fragility.
+**Size envelope.** The base64 is ~1.37× the original size. The reliable ceiling is
+**much lower than you'd think** — empirically, a 34.5 KB encoded payload timed out
+mid-call ("API Error: The operation timed out"). Plan conservatively.
 
 | Original file size | Encoded size | Recommendation |
 |---|---|---|
-| ≤ 35 KB | ≤ 50 KB | Inline `content` works reliably |
-| 35–60 KB | 50–80 KB | Inline `content` may work but verify by checking the sent email |
-| > 60 KB | > 80 KB | Draft, then ask the user to re-attach manually, **or** share via Drive |
+| ≤ 15 KB | ≤ 20 KB | Inline `content` works reliably |
+| 15–30 KB | 20–40 KB | Inline `content` may time out — verify by checking sent mail |
+| > 30 KB | > 40 KB | **Don't try inline.** Use the draft-and-attach-manually escape hatch (below) or share via Drive |
+
+### Escape hatch — draft + manual attach
+
+When the file is too large for reliable inline send:
+
+1. Create a Gmail **draft** (no attachment) via
+   `mcp__google-workspace__draft_gmail_message` with the full body text.
+2. Tell the user: "draft created — open it in Gmail web UI and attach
+   `<filename>` from `<host-path>` before sending".
+3. Done. Costs one manual step, avoids both the timeout and the truncation trap.
+
+This is often the *right* choice even when inline would work, because it keeps the
+human in the loop on the irreversible action (the actual send).
 
 ### 4. Build and execute the MCP call
 
