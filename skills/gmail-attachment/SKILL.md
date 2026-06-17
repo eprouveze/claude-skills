@@ -9,7 +9,7 @@ description: >
   paths; this skill enforces the only working route (base64 `content` + `filename`) and
   documents the size envelope.
 allowed-tools: Bash, Read
-version: 0.1.1
+version: 0.1.2
 last-updated: 2026-06-17
 last-consolidated: 2026-06-17
 metadata:
@@ -87,15 +87,19 @@ mid-call ("API Error: The operation timed out"). Plan conservatively.
 | 15–30 KB | 20–40 KB | Inline `content` may time out — verify by checking sent mail |
 | > 30 KB | > 40 KB | **Don't try inline.** Use the draft-and-attach-manually escape hatch (below) or share via Drive |
 
-### Escape hatch — draft + manual attach
+### Escape hatch — compose manually in Gmail web UI
 
 When the file is too large for reliable inline send:
 
-1. Create a Gmail **draft** (no attachment) via
-   `mcp__google-workspace__draft_gmail_message` with the full body text.
-2. Tell the user: "draft created — open it in Gmail web UI and attach
-   `<filename>` from `<host-path>` before sending".
-3. Done. Costs one manual step, avoids both the timeout and the truncation trap.
+1. Hand the user the prepared message: To, Subject, Body, attachment host path.
+2. Tell them to compose in Gmail web UI and attach the file there.
+3. Done. Costs ~30 seconds, avoids both the timeout and the truncation trap.
+
+> **Note.** The current `google-workspace` MCP exposes only
+> `mcp__google-workspace__send_gmail_message` — there is no
+> `draft_gmail_message`. So the previously-imagined "MCP-draft + manual attach"
+> route does not work; full-manual compose is the actual escape hatch. Verified
+> by attempting `draft_gmail_message` and getting "No such tool available".
 
 This is often the *right* choice even when inline would work, because it keeps the
 human in the loop on the irreversible action (the actual send).
@@ -116,7 +120,9 @@ mcp__google-workspace__send_gmail_message(
 )
 ```
 
-For drafts, use `mcp__google-workspace__draft_gmail_message` with the identical signature.
+> **No drafts in this MCP.** The current `google-workspace` MCP version exposes only
+> `send_gmail_message`. If you want a draft, use the manual-compose escape hatch above
+> (the user composes in Gmail web UI directly).
 
 ### 5. Verify
 

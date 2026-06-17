@@ -27,6 +27,14 @@ Consolidate weekly OR when this file exceeds ~100 bullets.
   patterns.
 - Validated MIME: `text/markdown` accepted by Gmail and rendered as expected attachment.
 
+## 2026-06-17 — `draft_gmail_message` does not exist in this MCP → APPLY
+
+- Tried calling `mcp__google-workspace__draft_gmail_message` as an escape hatch when
+  inline send timed out. Got back "No such tool available". So the only verb is `send`.
+- This eliminates the "MCP-draft + user-attaches-manually" route. The replacement is
+  fully manual: hand the user the prepared message (To, Subject, Body, attachment path)
+  and have them compose in Gmail web UI directly.
+
 ## 2026-06-17 — empirical size envelope is much smaller than expected → APPLY
 
 - Retrying the corrective send for the same 26 KB Markdown file (34.5 KB encoded) failed
