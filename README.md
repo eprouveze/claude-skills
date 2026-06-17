@@ -33,6 +33,7 @@ Want to just try one? Pick a ✅ skill in the table below and follow
 | `crawl`            | Tiered web fetcher → clean markdown. Direct fetch (zero-setup) + optional Cloudflare. |
 | `deslop`           | Strip 22 common AI-writing tells from drafts (em-dashes, gift-wrapped endings, etc.). |
 | `evaluate-plan`    | Coverage check on an implementation plan against its source requirements.             |
+| `gmail-attachment` | Send Gmail with file attachments via the google-workspace MCP — the route that works. |
 | `keyword-research` | Google Trends interest + related queries for SEO and content prioritization.          |
 | `mode`             | Toggle single-LLM vs multi-LLM routing for skills that support delegation.            |
 | `model-scan`       | Scan provider APIs and docs to keep a project's model table current.                  |
@@ -60,6 +61,7 @@ Most need nothing beyond Claude Code. A few call another model, a key, or a Node
 | `model-scan` | — | provider API keys, plus Node |
 | `namecheap` | — | a Namecheap API key |
 | `salesforce-reports` | — | the `sf` CLI and a Salesforce org |
+| `gmail-attachment` | — | the `google-workspace` MCP, authenticated to your Gmail |
 
 ✅ works as-is &middot; ◑ works, but better with extra models &middot; — needs the listed setup first
 
@@ -143,6 +145,9 @@ writes to `~/.config/claude-skills/<skill>.env` — never into the skill source.
   `skills/deslop/SKILL.md`.
 - **evaluate-plan** — `/evaluate-plan @prd.md`. Coverage report. See
   `skills/evaluate-plan/SKILL.md`.
+- **gmail-attachment** — `/gmail-attachment Email this PDF to alice@example.com`.
+  Encodes the file and sends through the `google-workspace` MCP using the only working
+  route (inline base64). See `skills/gmail-attachment/SKILL.md`.
 - **keyword-research** — `npm i google-trends-api`, then
   `npx tsx skills/keyword-research/scripts/keyword-research.ts --keywords "a, b, c"`. See
   `skills/keyword-research/SKILL.md`.
