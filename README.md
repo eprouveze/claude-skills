@@ -1,5 +1,7 @@
 # Claude Skills
 
+> 🇯🇵 日本語版: [README.ja.md](README.ja.md) ・ かんたんインストール手順（git不要）: [INSTALL.ja.md](INSTALL.ja.md)
+
 A collection of practical Claude Code skills built around multi-LLM workflows,
 plan/coverage checking, content quality, and domain ops. MIT licensed.
 
