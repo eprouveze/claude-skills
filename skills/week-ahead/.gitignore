@@ -1,0 +1,18 @@
+# Per-run local state — never push to the public claude-skills repo.
+# By default the workflow writes to <cwd>/week-ahead/ (a per-project folder, not in this skill repo).
+# But protect against accidental in-skill-folder writes from older runs / inline-prompt invocations:
+week-ahead/
+runs/
+runs.jsonl
+cache/
+dossiers/
+
+# Diagnostic logs (postmortems, manual notes about specific runs).
+logs/
+
+# Channel map holds real Slack channel IDs + account names = CUSTOMER DATA.
+# NEVER commit it to the public repo. Ship only channel-map.example.json (fake).
+# The skill reads/writes channel-map.json locally; it stays out of git.
+channel-map.json
+channel-map.local.json
+*.bak
