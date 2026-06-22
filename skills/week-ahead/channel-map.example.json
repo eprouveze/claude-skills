@@ -1,0 +1,25 @@
+{
+  "_comment": "EXAMPLE template. opp Id -> one or more Slack channels for the deal. An opp can have several relevant channels (dedicated deal channel, account channel, sibling/program channel). week-ahead appends resolved channels so future runs are instant. Key = 18-char Opportunity Id. Copy this to channel-map.json (gitignored) and let the skill populate it — never commit real channel IDs / account names to a public repo.",
+  "_schema": "channels[oppId] = { oppName, account, channels: [ { channelId, channelName, role, verified, note? } ] }  — role ∈ dedicated | account | sibling | program | weak",
+  "_verified": "YYYY-MM-DD",
+  "channels": {
+    "006000000000000AAA": {
+      "oppName": "Example Corp — Platform Expansion (FY26)",
+      "account": "Example Corp",
+      "channels": [
+        {
+          "channelId": "C0EXAMPLE01",
+          "channelName": "#deal-example-corp-platform",
+          "role": "dedicated",
+          "verified": "YYYY-MM-DD"
+        },
+        {
+          "channelId": "C0EXAMPLE02",
+          "channelName": "#account-example-corp",
+          "role": "account",
+          "verified": "YYYY-MM-DD"
+        }
+      ]
+    }
+  }
+}
