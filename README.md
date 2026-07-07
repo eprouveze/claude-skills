@@ -37,6 +37,7 @@ Want to just try one? Pick a ✅ skill in the table below and follow
 | `evaluate-plan`    | Coverage check on an implementation plan against its source requirements.             |
 | `gmail-attachment` | Send Gmail with file attachments via the google-workspace MCP — the route that works. |
 | `keyword-research` | Google Trends interest + related queries for SEO and content prioritization.          |
+| `meeting-prep`     | One researched briefing per upcoming meeting — reads your calendar, public web only.  |
 | `mode`             | Toggle single-LLM vs multi-LLM routing for skills that support delegation.            |
 | `model-scan`       | Scan provider APIs and docs to keep a project's model table current.                  |
 | `namecheap`        | Domain management via Namecheap's XML API (check, register, DNS, transfer, renew).    |
@@ -53,6 +54,7 @@ Most need nothing beyond Claude Code. A few call another model, a key, or a Node
 | Skill | Claude Code alone? | For the full thing |
 | --- | --- | --- |
 | `brief`, `deslop`, `evaluate-plan`, `mode`, `plan` | ✅ | — |
+| `meeting-prep` | ✅ | — (Python 3 built-in; calendar read is optional — pasting works) |
 | `crawl` | ✅ basic | Node (`npx tsx`); Cloudflare keys for JS-heavy pages |
 | `update-machine` | ✅ | the package managers you already use (brew/npm/pipx/uv) |
 | `battle` | ◑ partial | Antigravity + Codex CLI to benchmark the full model field |
